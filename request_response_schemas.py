@@ -36,6 +36,7 @@ class CreateUser(BaseModel):
     last_name: str = Field()
     password: str = Field()
     role: str = Field()
+    phone_number: str = Field()
 
 
 class Token(BaseModel):
@@ -46,3 +47,8 @@ class Token(BaseModel):
 class UserVerification(BaseModel):
     password: str
     new_password: str = Field(min_length=6)
+
+
+class PhoneChange(BaseModel):
+    password: str
+    new_phone_number: str

@@ -89,7 +89,7 @@ class AuthUtils:
         return jwt.encode(claims=payload, key=SECRET_KEY, algorithm=ALGORITHM)  # type: ignore
 
 
-@router.post("/auth", status_code=status.HTTP_201_CREATED)
+@router.post("/users", status_code=status.HTTP_201_CREATED)
 async def create_user(
     create_user_request: CreateUser = Body(...), db_session: Session = Depends(get_db)
 ):
@@ -101,6 +101,7 @@ async def create_user(
         role=create_user_request.role,
         hashed_password=hash_password(create_user_request.password),
         is_active=True,
+        phone_number=create_user_request.phone_number,
     )
 
     try:
