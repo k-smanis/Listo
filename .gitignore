@@ -6,4 +6,6 @@ README.md
 
 /.vscode
 
-tasks.db
+*.db
+
+.env
