@@ -27,3 +27,22 @@ class TaskUpdate(BaseModel):
 class TaskResponse(TaskBase):
     is_complete: bool
     id: int
+
+
+class CreateUser(BaseModel):
+    username: str = Field()
+    email: str = Field()
+    first_name: str = Field()
+    last_name: str = Field()
+    password: str = Field()
+    role: str = Field()
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class UserVerification(BaseModel):
+    password: str
+    new_password: str = Field(min_length=6)
