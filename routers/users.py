@@ -3,13 +3,12 @@ from starlette import status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy import select
-from routers.auth import AuthUtils
 
-import models
-from database import get_db
-from request_response_schemas import PhoneChange, UserVerification
-from routers.auth import JwtUser
-from security import hash_password, verify_password
+from ..models import Users
+from ..database import get_db
+from ..request_response_schemas import PhoneChange, UserVerification
+from ..utils.auth import JwtUser, get_current_user
+from ..utils.security import hash_password, verify_password
 
 # Initialize Router
 router = APIRouter(prefix="/api", tags=["Users"])
@@ -17,7 +16,7 @@ router = APIRouter(prefix="/api", tags=["Users"])
 
 @router.get("/users", status_code=status.HTTP_200_OK)
 async def get_user(
-    user: JwtUser = Depends(AuthUtils.get_current_user),
+    user: JwtUser = Depends(get_current_user),
     db_session: Session = Depends(get_db),
 ):
     if user is None:
@@ -26,14 +25,14 @@ async def get_user(
         )
 
     return db_session.execute(
-        select(models.Users).where(models.Users.id == user.user_id)
+        select(Users).where(Users.id == user.user_id)
     ).scalar_one_or_none()
 
 
 @router.put("/password", status_code=status.HTTP_204_NO_CONTENT)
 async def change_password(
     user_verification: UserVerification,
-    user: JwtUser = Depends(AuthUtils.get_current_user),
+    user: JwtUser = Depends(get_current_user),
     db_session: Session = Depends(get_db),
 ):
     if user is None:
@@ -42,7 +41,7 @@ async def change_password(
         )
 
     db_user = db_session.execute(
-        select(models.Users).where(models.Users.id == user.user_id)
+        select(Users).where(Users.id == user.user_id)
     ).scalar_one_or_none()
 
     if not verify_password(
@@ -76,7 +75,7 @@ async def change_password(
 @router.put("/phone-number", status_code=status.HTTP_204_NO_CONTENT)
 async def change_phone_number(
     phone_change: PhoneChange,
-    user: JwtUser = Depends(AuthUtils.get_current_user),
+    user: JwtUser = Depends(get_current_user),
     db_session: Session = Depends(get_db),
 ):
     if user is None:
@@ -85,7 +84,7 @@ async def change_phone_number(
         )
 
     db_user = db_session.execute(
-        select(models.Users).where(models.Users.id == user.user_id)
+        select(Users).where(Users.id == user.user_id)
     ).scalar_one_or_none()
 
     if not verify_password(

@@ -27,6 +27,7 @@ class TaskUpdate(BaseModel):
 class TaskResponse(TaskBase):
     is_complete: bool
     id: int
+    owner_id: int
 
 
 class CreateUser(BaseModel):

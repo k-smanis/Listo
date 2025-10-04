@@ -1,27 +1,30 @@
+from sqlalchemy.engine import URL
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from dotenv import load_dotenv
+from pathlib import Path
 import os
-import urllib.parse
-
-# SQLITE Setup
-# SQLITE_DB_URL = "sqlite:///./listo.db"
-# engine = create_engine(SQLITE_DB_URL, connect_args={"check_same_thread": False})
-# SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-# Base = declarative_base()
 
 
-# POSTGRES Setup
-load_dotenv()
+# Production Database Setup (POSTGRES)
+BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(BASE_DIR / ".env")
 PGUSER = os.getenv("PGUSER")
-PGPASSWORD = urllib.parse.quote_plus(os.getenv("PGPASSWORD", ""))
+PGPASSWORD = os.getenv("PGPASSWORD")
 PGHOST = os.getenv("PGHOST")
 PGPORT = os.getenv("PGPORT")
 PGDATABASE = os.getenv("PGDATABASE")
-POSTGRES_DB_URL = (
-    f"postgresql+psycopg2://{PGUSER}:{PGPASSWORD}@{PGHOST}:{PGPORT}/{PGDATABASE}"
+
+POSTGRES_DB_URL = URL.create(
+    "postgresql+psycopg2",
+    username=PGUSER,
+    password=PGPASSWORD,
+    host=PGHOST,
+    port=int(PGPORT) if PGPORT else None,  # omit if missing
+    database=PGDATABASE,
 )
+
 engine = create_engine(POSTGRES_DB_URL, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 Base = declarative_base()
