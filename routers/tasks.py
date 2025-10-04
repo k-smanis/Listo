@@ -3,13 +3,12 @@ from starlette import status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy import select
-from routers.auth import AuthUtils
 from typing import List
 
-import models
-from database import get_db
-from request_response_schemas import TaskCreate, TaskUpdate, TaskResponse
-from routers.auth import JwtUser
+from ..models import Tasks
+from ..database import get_db
+from ..request_response_schemas import TaskCreate, TaskUpdate, TaskResponse
+from ..utils.auth import JwtUser, get_current_user
 
 # Initialize Router
 router = APIRouter(prefix="/api", tags=["Tasks"])
@@ -17,7 +16,7 @@ router = APIRouter(prefix="/api", tags=["Tasks"])
 
 @router.get("/tasks", response_model=List[TaskResponse], status_code=status.HTTP_200_OK)
 async def get_all_tasks(
-    user: JwtUser = Depends(AuthUtils.get_current_user),
+    user: JwtUser = Depends(get_current_user),
     db_session: Session = Depends(get_db),
 ):
     if user is None:
@@ -26,9 +25,7 @@ async def get_all_tasks(
         )
 
     tasks = (
-        db_session.execute(
-            select(models.Tasks).where(models.Tasks.owner_id == user.user_id)
-        )
+        db_session.execute(select(Tasks).where(Tasks.owner_id == user.user_id))
         .scalars()
         .all()
     )
@@ -39,7 +36,7 @@ async def get_all_tasks(
     "/tasks/{task_id}", response_model=TaskResponse, status_code=status.HTTP_200_OK
 )
 async def get_task_by_id(
-    user: JwtUser = Depends(AuthUtils.get_current_user),
+    user: JwtUser = Depends(get_current_user),
     task_id: int = Path(gt=0),
     db_session: Session = Depends(get_db),
 ):
@@ -49,9 +46,7 @@ async def get_task_by_id(
         )
 
     target_task = db_session.execute(
-        select(models.Tasks).where(
-            models.Tasks.id == task_id, models.Tasks.owner_id == user.user_id
-        )
+        select(Tasks).where(Tasks.id == task_id, Tasks.owner_id == user.user_id)
     ).scalar_one_or_none()
 
     if target_task is None:
@@ -66,7 +61,7 @@ async def get_task_by_id(
 @router.post("/tasks", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
 async def post_task(
     response: Response,
-    user: JwtUser = Depends(AuthUtils.get_current_user),
+    user: JwtUser = Depends(get_current_user),
     request_body: TaskCreate = Body(...),
     db_session: Session = Depends(get_db),
 ):
@@ -75,7 +70,7 @@ async def post_task(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication Failed"
         )
 
-    new_task = models.Tasks(**request_body.model_dump())
+    new_task = Tasks(**request_body.model_dump())
     new_task.owner_id = user.user_id  # type: ignore
 
     try:
@@ -105,7 +100,7 @@ async def post_task(
     status_code=status.HTTP_200_OK,
 )
 async def update_task(
-    user: JwtUser = Depends(AuthUtils.get_current_user),
+    user: JwtUser = Depends(get_current_user),
     task_id: int = Path(gt=0),
     updated_task: TaskUpdate = Body(...),
     db_session: Session = Depends(get_db),
@@ -115,7 +110,7 @@ async def update_task(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication Failed"
         )
 
-    db_task = db_session.get(models.Tasks, task_id)
+    db_task = db_session.get(Tasks, task_id)
 
     if not db_task:
         raise HTTPException(
@@ -148,7 +143,7 @@ async def update_task(
 
 @router.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
 async def delete_task(
-    user: JwtUser = Depends(AuthUtils.get_current_user),
+    user: JwtUser = Depends(get_current_user),
     task_id: int = Path(gt=0),
     db_session: Session = Depends(get_db),
 ):
@@ -157,7 +152,7 @@ async def delete_task(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication Failed"
         )
 
-    db_task = db_session.get(models.Tasks, task_id)
+    db_task = db_session.get(Tasks, task_id)
     if not db_task:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
