@@ -1,12 +1,84 @@
-.env
+# =====================================
+# 🐍 PYTHON PROJECT GITIGNORE TEMPLATE
+# =====================================
 
-LICENSE
-
-README.md
-
-/.vscode
-
-*.db
-
+# --- Python cache & build ---
 *.pyc
 __pycache__/
+*.py[cod]
+*$py.class
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+
+# --- Distribution / packaging ---
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# --- Unit test / coverage ---
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+.tox/
+.mypy_cache/
+.pyre/
+.dmypy.json
+.pytype/
+
+# --- IDE / editor ---
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# --- OS-specific ---
+.DS_Store
+Thumbs.db
+
+# --- Database / local dev data ---
+*.db
+*.sqlite3
+
+# --- Environment / config ---
+.env
+.env.*
+!.env.example
+
+# --- Logs ---
+*.log
+logs/
+log/
+
+# --- Jupyter / IPython ---
+.ipynb_checkpoints
+*.ipynb
+
+# --- Profiling / debug ---
+*.pstats
+profile_default/
+
+# --- Local scripts / misc ---
+*.bak
+*.swp
+*~
