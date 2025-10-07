@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Listo - Sign Up</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #0b1020;
+      color: #e9ecf8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .signup-card {
+      background: #121a32;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      width: 100%;
+      max-width: 420px;
+      overflow-y: auto;
+      max-height: 90vh;
+    }
+    h2 { margin: 0 0 20px; text-align: center; }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      color: #9aa4bf;
+    }
+    input.input, select.input {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 16px;
+      background: #161e39;
+      border: 1px solid #1f2847;
+      border-radius: 12px;
+      color: #e9ecf8;
+      font-size: 14px;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+    }
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(180deg,#6ea8fe,#4f86f7);
+      border: none;
+      border-radius: 12px;
+      color: #061024;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .2s;
+    }
+    .btn:hover { opacity: .95; }
+    .btn.ghost {
+      background: transparent;
+      border: 1px solid #1f2847;
+      color: #e9ecf8;
+      margin-top: 10px;
+    }
+    .btn.ghost:hover { background: #161e39; }
+    .msg {
+      text-align: center;
+      font-size: 14px;
+      margin-top: 10px;
+      opacity: 1;
+      transition: opacity 0.5s ease;
+    }
+    .msg.hide {
+      opacity: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="signup-card">
+    <h2>Create Account</h2>
+
+    <label for="username">Username</label>
+    <input type="text" id="username" class="input" placeholder="Choose a username" />
+
+    <label for="email">Email</label>
+    <input type="email" id="email" class="input" placeholder="you@example.com" />
+
+    <label for="first_name">First Name</label>
+    <input type="text" id="first_name" class="input" placeholder="First name" />
+
+    <label for="last_name">Last Name</label>
+    <input type="text" id="last_name" class="input" placeholder="Last name" />
+
+    <label for="password">Password</label>
+    <input type="password" id="password" class="input" placeholder="Enter password" />
+
+    <label for="phone_number">Phone Number</label>
+    <input type="tel" id="phone_number" class="input" placeholder="(xxx) xxx-xxxx" />
+
+    <label for="role">Role</label>
+    <select id="role" class="input">
+      <option value="user" selected>User</option>
+      <option value="admin">Admin</option>
+    </select>
+
+    <button class="btn" onclick="signup()">Sign Up</button>
+    <button class="btn ghost" onclick="goToLogin()">Back to Login</button>
+
+    <div class="msg" id="signupMsg"></div>
+  </div>
+
+  <script>
+    const api = (p) => p;
+
+    function showMessage(text, color = "#9aa4bf") {
+      const msg = document.getElementById("signupMsg");
+      msg.textContent = text;
+      msg.style.color = color;
+      msg.classList.remove("hide");
+      setTimeout(() => msg.classList.add("hide"), 5000);
+    }
+
+    async function signup() {
+      const data = {
+        username: document.getElementById("username").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        first_name: document.getElementById("first_name").value.trim(),
+        last_name: document.getElementById("last_name").value.trim(),
+        password: document.getElementById("password").value,
+        phone_number: document.getElementById("phone_number").value.trim(),
+        role: document.getElementById("role").value
+      };
+
+      if (!data.username || !data.email || !data.password) {
+        showMessage("Please fill in all required fields.", "#ff5c5c");
+        return;
+      }
+
+      showMessage("Creating account…", "#9aa4bf");
+
+      try {
+        const res = await fetch(api("/api/users"), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(data)
+        });
+
+        if (!res.ok) {
+          let errMsg = "Signup failed";
+          try {
+            const err = await res.json();
+            errMsg = err.detail || errMsg;
+          } catch {}
+          // Special color for 409 Conflict
+          const color = res.status === 409 ? "#6ea8fe" : "#ff5c5c";
+          showMessage("This account already exists.", color);
+          return;
+        }
+
+        showMessage("Account created! Redirecting to login…", "#6ea8fe");
+        setTimeout(() => window.location.assign("/ui/login"), 1200);
+      } catch (e) {
+        console.error(e);
+        showMessage(e.message || "Network error.", "#ff5c5c");
+      }
+    }
+
+    function goToLogin() {
+      window.location.assign("/ui/login");
+    }
+  </script>
+</body>
+</html>

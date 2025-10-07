@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Listo - Tasks</title>
+  <style>
+    :root{
+      --bg:#0b1020;--panel:#121a32;--muted:#9aa4bf;--text:#e9ecf8;
+      --primary:#6ea8fe;--primary-2:#4f86f7;--border:#1f2847;--input:#161e39;
+      --danger:#ff5c5c;--danger-2:#e14c4c;
+    }
+    *{box-sizing:border-box}
+    body{font-family:Arial, sans-serif;background:var(--bg);color:var(--text);margin:0}
+    .container{max-width:1200px;margin:0 auto;padding:20px}
+
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .brand{font-weight:900;font-size:22px}
+    .sub{color:var(--muted);font-size:12px;margin-top:2px}
+    .h-right{display:flex;gap:10px}
+    .btn{appearance:none;border:1px solid var(--border);
+      background:linear-gradient(180deg,var(--primary),var(--primary-2));
+      color:#061024;padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer}
+    .btn.ghost{background:transparent;color:var(--text)}
+    .btn.danger{background:linear-gradient(180deg,var(--danger),var(--danger-2));color:white;border:none}
+
+    .toolbar{display:flex;align-items:center;gap:10px;margin:8px 0 16px}
+    .input, select{padding:10px;background:var(--input);border:1px solid var(--border);
+      border-radius:10px;color:var(--text)}
+    .pill{font-size:12px;color:var(--muted);padding:6px 10px;border:1px solid var(--border);border-radius:999px}
+
+    .table-wrap{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:auto}
+    table{width:100%;border-collapse:separate;border-spacing:0;min-width:720px}
+    thead th{position:sticky;top:0;background:#0f1429;border-bottom:1px solid var(--border);text-align:left;font-weight:700;padding:12px}
+    tbody td{padding:12px;border-bottom:1px solid var(--border);vertical-align:top}
+    tbody tr:hover{background:rgba(255,255,255,.02)}
+
+    .create-task{margin-top:12px;background:var(--panel);padding:12px;border:1px solid var(--border);border-radius:12px;display:flex;gap:10px;align-items:center}
+    .create-task input, .create-task textarea{background:var(--input);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px}
+    .create-task textarea{resize:none;height:40px}
+    .create-task button{margin-left:auto}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <div class="brand">Listo</div>
+        <div class="sub">Signed in as <span id="whoami">—</span></div>
+      </div>
+      <div class="h-right">
+        <button class="btn ghost" onclick="goToAccount()">Account</button>
+        <button class="btn ghost" onclick="logout()">Logout</button>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <input id="search" class="input" placeholder="Search…" oninput="render()" />
+      <select id="sortSelect" onchange="render()">
+        <option value="">Sort: None</option>
+        <option value="priorityHighLow">Priority: High → Low</option>
+        <option value="priorityLowHigh">Priority: Low → High</option>
+      </select>
+      <span class="pill" id="countBadge">0 tasks</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:80px">Status</th>
+            <th style="width:260px">Title</th>
+            <th>Details</th>
+            <th style="width:110px">Priority</th>
+            <th style="width:120px">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="create-task">
+      <input id="newTitle" placeholder="Title (required)" />
+      <input id="newDetails" placeholder="Details" />
+      <input id="newPriority" type="number" min="1" max="5" placeholder="Priority"  style="width:100px" />
+      <button class="btn" onclick="createTask()">Create Task</button>
+    </div>
+  </div>
+
+  <script>
+    const api = (p) => p;
+    const token = localStorage.getItem('listo_token');
+    const username = localStorage.getItem('listo_user') || '';
+    const headersAuth = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+    if (!token) location.assign('/login');
+    document.getElementById('whoami').textContent = username || 'unknown';
+
+    let TASKS = [];
+    const $ = sel => document.querySelector(sel);
+    const taskId = t => t.id ?? t.task_id;
+    const taskTitle = t => t.title ?? '(untitled)';
+    const isComplete = t => !!(t.is_complete ?? t.completed ?? t.done);
+    const fmt = v => (v==null || v==='') ? '—' : v;
+
+    async function syncTasks(){
+      try {
+        const res = await fetch(api('/api/tasks'), { headers: { ...headersAuth, 'Accept':'application/json' } });
+        TASKS = await res.json();
+        render();
+      } catch(e) {
+        console.error(e);
+      }
+    }
+
+    async function updateStatus(id, done){
+      try {
+        await fetch(api(`/api/tasks/${id}`), {
+          method:'PUT',
+          headers: { ...headersAuth, 'Content-Type':'application/json' },
+          body: JSON.stringify({ is_complete: done })
+        });
+        const i = TASKS.findIndex(t=> taskId(t)===id);
+        if (i>-1) TASKS[i].is_complete = done;
+      } catch(e){ console.error(e); }
+    }
+
+    async function deleteTask(id){
+      if (!confirm('Delete this task?')) return;
+      try {
+        await fetch(api(`/api/tasks/${id}`), { method:'DELETE', headers: headersAuth });
+        TASKS = TASKS.filter(t => taskId(t)!==id);
+        render();
+      } catch(e){ console.error(e); }
+    }
+
+    async function createTask(){
+      const title = $('#newTitle').value.trim();
+      if (!title) return alert('Title is required');
+      const details = $('#newDetails').value.trim();
+      const priority = parseInt($('#newPriority').value) || 3;
+      try {
+        const res = await fetch(api('/api/tasks'), {
+          method:'POST',
+          headers: { ...headersAuth, 'Content-Type':'application/json' },
+          body: JSON.stringify({ title, details, priority })
+        });
+        const newTask = await res.json();
+        TASKS.push(newTask);
+        $('#newTitle').value=''; $('#newDetails').value=''; $('#newPriority').value='';
+        render();
+      } catch(e){ console.error(e); }
+    }
+
+    function render(){
+      const q = ($('#search').value||'').toLowerCase();
+      const sortVal = $('#sortSelect').value;
+      let items = TASKS.slice();
+      if(q) items = items.filter(t => JSON.stringify(t).toLowerCase().includes(q));
+
+      if (sortVal === 'priorityHighLow') items.sort((a,b) => a.priority - b.priority);
+      if (sortVal === 'priorityLowHigh') items.sort((a,b) => b.priority - a.priority);
+
+      $('#countBadge').textContent = `${items.length} task${items.length===1?'':'s'}`;
+
+      const body = $('#tbody'); body.innerHTML='';
+      for(const t of items){
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><input type="checkbox" ${isComplete(t)?'checked':''}></td>
+          <td>${fmt(taskTitle(t))}</td>
+          <td>${fmt(t.details)}</td>
+          <td>${fmt(t.priority)}</td>
+          <td><button class="btn danger small">Delete</button></td>
+        `;
+        const cb = tr.querySelector('input[type=checkbox]');
+        cb.onchange = () => updateStatus(taskId(t), cb.checked);
+        tr.querySelector('button').onclick = () => deleteTask(taskId(t));
+        body.appendChild(tr);
+      }
+    }
+
+    function logout(){
+      localStorage.removeItem('listo_token');
+      localStorage.removeItem('listo_user');
+      location.assign('/ui/login');
+    }
+
+    function goToAccount() {
+      location.assign('/ui/account');
+    }
+
+    syncTasks();
+  </script>
+</body>
+</html>

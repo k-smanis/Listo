@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Listo - Login</title>
+  <style>
+    * { box-sizing: border-box; }
+    body{
+      font-family:Arial, sans-serif;
+      background:#0b1020;
+      color:#e9ecf8;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      height:100vh;
+      margin:0;
+    }
+    .login-card{
+      background:#121a32;
+      padding:30px;
+      border-radius:16px;
+      box-shadow:0 10px 30px rgba(0,0,0,.35);
+      width:100%;
+      max-width:400px;
+    }
+    h2{margin:0 0 20px;text-align:center}
+    label{display:block;margin-bottom:6px;font-size:14px;color:#9aa4bf}
+    .input{
+      width:100%;
+      padding:10px;
+      margin-bottom:16px;
+      background:#161e39;
+      border:1px solid #1f2847;
+      border-radius:12px;
+      color:#e9ecf8;
+    }
+    .btn{
+      width:100%;
+      padding:12px;
+      background:linear-gradient(180deg,#6ea8fe,#4f86f7);
+      border:none;
+      border-radius:12px;
+      color:#061024;
+      font-weight:700;
+      cursor:pointer;
+      transition:opacity .2s;
+    }
+    .btn:hover{opacity:.95}
+    .btn.ghost{
+      background:transparent;
+      border:1px solid #1f2847;
+      color:#e9ecf8;
+      margin-top:10px;
+    }
+    .btn.ghost:hover{
+      background:#161e39;
+    }
+    .msg{text-align:center;font-size:14px;margin-top:10px;color:#9aa4bf}
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <h2>Sign In</h2>
+    <label for="username">Username</label>
+    <input type="text" id="username" class="input" placeholder="Enter username" />
+    <label for="password">Password</label>
+    <input type="password" id="password" class="input" placeholder="Enter password" />
+    <button class="btn" onclick="login()">Login</button>
+    <button class="btn ghost" onclick="goToSignup()">Sign Up</button>
+    <div class="msg" id="loginMsg"></div>
+  </div>
+
+  <script>
+    const baseURL = "";
+    const api = (p) => baseURL + p;
+
+    async function login(){
+      const u = document.getElementById('username').value.trim();
+      const p = document.getElementById('password').value;
+      const msg = document.getElementById('loginMsg');
+      if(!u || !p){ msg.textContent = 'Please enter username and password'; return; }
+      msg.textContent = 'Logging in…';
+      try{
+        const form = new URLSearchParams();
+        form.set('username', u);
+        form.set('password', p);
+
+        const res = await fetch(api('/api/token'), {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json, text/plain, */*',
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: form
+        });
+
+        const ct = res.headers.get('content-type') || '';
+        let data;
+        if(ct.includes('application/json')){
+          try { data = await res.json(); } catch { data = {}; }
+        } else {
+          data = await res.text();
+        }
+
+        if(!res.ok){
+          const detail = (data && data.detail) || (typeof data === 'string' ? data : 'Login failed');
+          throw new Error(detail);
+        }
+
+        const token = (data && (data.access_token || data.token || data.jwt)) || (typeof data === 'string' ? data : '');
+        if(!token) throw new Error('No token returned from server');
+
+        localStorage.setItem('listo_token', token);
+        localStorage.setItem('listo_user', u);
+        window.location.assign('/ui/tasks');
+      }catch(e){
+        console.error(e);
+        msg.textContent = (e && e.message) ? e.message : 'Network/CORS error';
+      }
+    }
+
+    function goToSignup(){
+      window.location.assign('/ui/signup');
+    }
+  </script>
+</body>
+</html>
