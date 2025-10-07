@@ -4,7 +4,7 @@ from pathlib import Path
 
 router = APIRouter(prefix="/ui", tags=["Login"])
 
-PAGES_DIR = Path(r"D:/portfolio/Listo/app/frontend")
+PAGES_DIR = Path(r"D:/portfolio/Listo/src/frontend")
 LOGIN_FILE_PATH = PAGES_DIR / "login.html"
 TASKS_FILE_PATH = PAGES_DIR / "tasks.html"
 ACCOUNT_FILE_PATH = PAGES_DIR / "account.html"
