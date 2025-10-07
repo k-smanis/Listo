@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Listo - Account</title>
+  <style>
+    :root {
+      --bg:#0b1020;--panel:#121a32;--muted:#9aa4bf;--text:#e9ecf8;
+      --primary:#6ea8fe;--primary-2:#4f86f7;--border:#1f2847;--input:#161e39;
+      --danger:#ff5c5c;--danger-2:#e14c4c;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+    .container{max-width:800px;margin:0 auto;padding:20px}
+
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+    .brand{font-weight:900;font-size:22px}
+    .sub{color:var(--muted);font-size:12px;margin-top:2px}
+    .h-right{display:flex;gap:10px}
+    .btn{
+      appearance:none;border:1px solid var(--border);
+      background:linear-gradient(180deg,var(--primary),var(--primary-2));
+      color:#061024;padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer;
+      transition:opacity 0.2s ease;
+    }
+    .btn:hover{opacity:.9}
+    .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+    .btn.danger{background:linear-gradient(180deg,var(--danger),var(--danger-2));color:white;border:none}
+
+    .section {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .section h2 {
+      margin-bottom: 16px;
+      font-size: 18px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      row-gap: 12px;
+      column-gap: 10px;
+    }
+
+    .info-label {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .info-value {
+      font-weight: 600;
+      word-break: break-word;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      background: var(--input);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+    }
+
+    .form-btn {
+      display: inline-block;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <div class="brand">Listo</div>
+        <div class="sub">Signed in as <span id="whoami">—</span></div>
+      </div>
+      <div class="h-right">
+        <button class="btn ghost" onclick="goToTasks()">Tasks</button>
+        <button class="btn ghost" onclick="logout()">Logout</button>
+      </div>
+    </header>
+
+    <!-- Account Info -->
+    <div class="section">
+      <h2>Account Info</h2>
+      <div class="info-grid">
+        <div class="info-label">Username</div><div class="info-value" id="username">—</div>
+        <div class="info-label">Email</div><div class="info-value" id="email">—</div>
+        <div class="info-label">First Name</div><div class="info-value" id="first_name">—</div>
+        <div class="info-label">Last Name</div><div class="info-value" id="last_name">—</div>
+        <div class="info-label">Phone Number</div><div class="info-value" id="phone_number">—</div>
+        <div class="info-label">Role</div><div class="info-value" id="role">—</div>
+      </div>
+    </div>
+
+    <!-- Change Password -->
+    <div class="section">
+      <h2>Change Password</h2>
+      <label>Current Password</label>
+      <input id="currentPassword" type="password" placeholder="Current password">
+      <label>New Password</label>
+      <input id="newPassword" type="password" placeholder="New password">
+      <button class="btn form-btn" onclick="changePassword()">Change Password</button>
+    </div>
+
+    <!-- Change Phone -->
+    <div class="section">
+      <h2>Change Phone Number</h2>
+      <label>Password</label>
+      <input id="phonePassword" type="password" placeholder="Current password">
+      <label>New Phone Number</label>
+      <input id="newPhone" type="text" placeholder="(xxx) xxx-xxxx">
+      <button class="btn form-btn" onclick="changePhone()">Change Phone</button>
+    </div>
+  </div>
+
+  <script>
+    const api = (p) => p;
+    const token = localStorage.getItem('listo_token');
+    const username = localStorage.getItem('listo_user') || '';
+    const headersAuth = token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : {};
+
+    if (!token) location.assign('/login');
+    document.getElementById('whoami').textContent = username || 'unknown';
+
+    async function loadAccount() {
+      try {
+        const res = await fetch(api('/api/users'), { headers: headersAuth });
+        if (!res.ok) throw new Error('Failed to load account info');
+        const data = await res.json();
+        document.getElementById('username').textContent = data.username;
+        document.getElementById('email').textContent = data.email;
+        document.getElementById('first_name').textContent = data.first_name;
+        document.getElementById('last_name').textContent = data.last_name;
+        document.getElementById('phone_number').textContent = data.phone_number;
+        document.getElementById('role').textContent = data.role;
+      } catch (e) {
+        console.error(e);
+        alert('Could not load account info.');
+      }
+    }
+
+    async function changePassword() {
+      const password = document.getElementById('currentPassword').value.trim();
+      const new_password = document.getElementById('newPassword').value.trim();
+      if (!password || !new_password) return alert('Both fields are required.');
+
+      try {
+        const res = await fetch(api('/api/password'), {
+          method: 'PUT',
+          headers: headersAuth,
+          body: JSON.stringify({ password, new_password })
+        });
+        if (res.status === 204) {
+          alert('Password changed successfully!');
+          document.getElementById('currentPassword').value = '';
+          document.getElementById('newPassword').value = '';
+        } else {
+          const err = await res.json();
+          alert(err.detail || 'Failed to change password.');
+        }
+      } catch (e) {
+        console.error(e);
+        alert('An error occurred.');
+      }
+    }
+
+    async function changePhone() {
+      const password = document.getElementById('phonePassword').value.trim();
+      const new_phone_number = document.getElementById('newPhone').value.trim();
+      if (!password || !new_phone_number) return alert('Both fields are required.');
+
+      try {
+        const res = await fetch(api('/api/phone-number'), {
+          method: 'PUT',
+          headers: headersAuth,
+          body: JSON.stringify({ password, new_phone_number })
+        });
+        if (res.status === 204) {
+          alert('Phone number changed successfully!');
+          document.getElementById('phonePassword').value = '';
+          document.getElementById('newPhone').value = '';
+          loadAccount();
+        } else {
+          const err = await res.json();
+          alert(err.detail || 'Failed to change phone number.');
+        }
+      } catch (e) {
+        console.error(e);
+        alert('An error occurred.');
+      }
+    }
+
+    function goToTasks() { location.assign('/ui/tasks'); }
+
+    function logout() {
+      localStorage.removeItem('listo_token');
+      localStorage.removeItem('listo_user');
+      location.assign('/ui/login');
+    }
+
+    loadAccount();
+  </script>
+</body>
+</html>
