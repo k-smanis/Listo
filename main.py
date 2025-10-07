@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from .database import Base, engine
-from starlette import status
 from .routers import auth, tasks, admin, users
 
 
@@ -9,12 +8,6 @@ app = FastAPI()
 
 # Initialize Dependencies
 Base.metadata.create_all(bind=engine)
-
-
-# Test Endpoint
-@app.get("/health", status_code=status.HTTP_200_OK)
-async def health_check():
-    return {"status": "healthy"}
 
 
 # Route to Sub-Apps

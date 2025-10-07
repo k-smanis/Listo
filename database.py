@@ -1,7 +1,8 @@
 from sqlalchemy.engine import URL
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
+
+from sqlalchemy.orm import declarative_base
 from dotenv import load_dotenv
 from pathlib import Path
 import os

@@ -10,10 +10,11 @@ from ..database import get_db
 from ..request_response_schemas import TaskCreate, TaskUpdate, TaskResponse
 from ..utils.auth import JwtUser, get_current_user
 
-# Initialize Router
+# Router
 router = APIRouter(prefix="/api", tags=["Tasks"])
 
 
+# Endpoints
 @router.get("/tasks", response_model=List[TaskResponse], status_code=status.HTTP_200_OK)
 async def get_all_tasks(
     user: JwtUser = Depends(get_current_user),
