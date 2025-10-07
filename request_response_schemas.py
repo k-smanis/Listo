@@ -23,13 +23,7 @@ class TaskUpdate(BaseModel):
     is_complete: Optional[bool] = None
 
 
-# What you return to clients
-class TaskResponse(TaskBase):
-    is_complete: bool
-    id: int
-    owner_id: int
-
-
+# GET /users
 class CreateUser(BaseModel):
     username: str = Field()
     email: str = Field()
@@ -38,6 +32,23 @@ class CreateUser(BaseModel):
     password: str = Field()
     role: str = Field()
     phone_number: str = Field()
+
+
+# What you return to clients
+class UserResponse(BaseModel):
+    username: str = Field()
+    email: str = Field()
+    first_name: str = Field()
+    last_name: str = Field()
+    hashed_password: str = Field()
+    role: str = Field()
+    phone_number: str = Field()
+
+
+class TaskResponse(TaskBase):
+    is_complete: bool
+    id: int
+    owner_id: int
 
 
 class Token(BaseModel):
