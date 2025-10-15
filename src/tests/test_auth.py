@@ -1,11 +1,14 @@
 import pytest
 from sqlalchemy import text
 from fastapi.testclient import TestClient
+from fastapi import Response
 from starlette import status
+from datetime import timedelta
 
 from ..database import get_db
 from ..models import Users
 from ..utils.security import hash_password
+from ..utils.auth import create_refresh_token
 from .conftest import TestingSessionLocal, engine
 
 
@@ -17,9 +20,9 @@ test_user_passwords = [
 ]
 
 test_user_phone_numbers = [
-    "(415) 392-8472",
-    "(628) 530-1946",
-    "(213) 874-5093",
+    "4153928472",
+    "6285301946",
+    "2138745093",
 ]
 
 
@@ -105,15 +108,16 @@ def test_auth_login_for_access_token_sc_200(
         "password": test_user_passwords[user_idx],
     }
 
-    # The endpoint parses the request's sign-in data using OAuth2PasswordRequestForm
-    # which itself parses application/x-www-form-urlencoded and not JSON.
-    # So we have to pass the mock sign-in data using the `data=...` parameter instead
-    # of the `json=...` parameter.
     response = client.post("/api/token", data=auth_data)
-    response_data = response.json()
+    body = response.json()
+    cookies = response.cookies
 
+    # --- assertions ---
     assert response.status_code == status.HTTP_200_OK
-    assert response_data["token_type"] == "bearer"
+    assert "message" in body
+    assert body["message"].lower().startswith("login successful")
+    assert "access_token" in cookies
+    assert len(cookies.get("access_token")) > 20  # type: ignore # looks like a JWT
 
 
 def test_auth_login_for_access_token_sc_401(
@@ -121,13 +125,59 @@ def test_auth_login_for_access_token_sc_401(
 ):
     auth_data = {
         "username": dummy_users[1].username,
-        "password": "dummy_wrong_passwerd",
+        "password": "dummy_wrong_password",
     }
 
-    # The endpoint parses the request's sign-in data using OAuth2PasswordRequestForm
-    # which itself parses application/x-www-form-urlencoded and not JSON.
-    # So we have to pass the mock sign-in data using the `data=...` parameter instead
-    # of the `json=...` parameter.
     response = client.post("/api/token", data=auth_data)
+
+    # --- assertions ---
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_auth_get_refresh_token_sc_200(
+    client: TestClient, dummy_users: list[Users], clean_db_auth
+):
+    user = dummy_users[0]
+
+    # Create a valid refresh token
+    refresh_token = create_refresh_token(
+        username=user.username,  # type: ignore
+        user_id=user.id,  # type: ignore
+        role=user.role,  # type: ignore
+        expires_delta=timedelta(days=1),
+    )
+
+    # Attach token as cookie
+    response = client.post("/api/refresh", cookies={"refresh_token": refresh_token})
+    body = response.json()
+
+    # --- assertions ---
+    assert response.status_code == status.HTTP_200_OK
+    assert "message" in body
+    assert body["message"].lower().startswith("access token refreshed")
+    assert "access_token" in response.cookies
+    assert len(response.cookies.get("access_token")) > 20  # type: ignore
+
+
+def test_auth_get_refresh_token_sc_401_missing_refresh_token(client: TestClient):
+    response = client.post("/api/refresh")
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+def test_auth_get_refresh_token_sc_401_expired_refresh_token(
+    client: TestClient, dummy_users: list[Users], clean_db_auth
+):
+    user = dummy_users[0]
+
+    # Create an expired refresh token
+    expired_token = create_refresh_token(
+        username=user.username,  # type: ignore
+        user_id=user.id,  # type: ignore
+        role=user.role,  # type: ignore
+        expires_delta=timedelta(seconds=-10),  # expired already
+    )
+
+    response = client.post("/api/refresh", cookies={"refresh_token": expired_token})
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED

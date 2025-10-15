@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from .database import Base, engine
 from .routers import auth, tasks, admin, users, pages
@@ -10,6 +11,19 @@ app = FastAPI()
 # Initialize Dependencies
 Base.metadata.create_all(bind=engine)
 
+
+# Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://listo-gpp5.onrender.com/",
+        "http://127.0.0.1:8000/",
+        "http://localhost:8000/",
+    ],
+    allow_credentials=True,  # ✅ required for cookies
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Route to Sub-Apps
 app.include_router(pages.router)

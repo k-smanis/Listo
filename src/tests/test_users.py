@@ -23,15 +23,15 @@ test_user_passwords_changed = [
 ]
 
 test_user_phone_numbers = [
-    "(415) 392-8472",
-    "(628) 530-1946",
-    "(213) 874-5093",
+    "4153928472",
+    "6285301946",
+    "2138745093",
 ]
 
 test_user_phone_numbers_changed = [
-    "(415) 392-8473",
-    "(628) 530-1947",
-    "(213) 874-5094",
+    "4153928473",
+    "6285301947",
+    "2138745094",
 ]
 
 
@@ -67,8 +67,8 @@ def dummy_users():
         Users(
             role="user",
             username="test_user_1",
-            first_name="test_user_1_FIRST_NAME",
-            last_name="test_user_1_LAST_NAME",
+            first_name="firstnameone",
+            last_name="lastnameone",
             hashed_password=hash_password(test_user_passwords[0]),
             email="tu1@mail.com",
             phone_number=test_user_phone_numbers[0],
@@ -76,17 +76,17 @@ def dummy_users():
         Users(
             role="user",
             username="test_user_2",
-            first_name="test_user_2_FIRST_NAME",
-            last_name="test_user_2_LAST_NAME",
+            first_name="firstnametwo",
+            last_name="lastnametwo",
             hashed_password=hash_password(test_user_passwords[1]),
             email="tu2@mail.com",
             phone_number=test_user_phone_numbers[1],
         ),
         Users(
-            role="admin",
+            role="user",
             username="test_user_3",
-            first_name="test_user_3_FIRST_NAME",
-            last_name="test_user_3_LAST_NAME",
+            first_name="firstnamethree",
+            last_name="lastnamethree",
             hashed_password=hash_password(test_user_passwords[2]),
             email="tu3@mail.com",
             phone_number=test_user_phone_numbers[1],
@@ -117,8 +117,8 @@ def test_users_create_user_sc_201(client: TestClient, clean_db_users):
         {
             "role": "user",
             "username": "test_user_1",
-            "first_name": "test_user_1_FIRST_NAME",
-            "last_name": "test_user_1_LAST_NAME",
+            "first_name": "firstnameone",
+            "last_name": "lasttnameone",
             "password": test_user_passwords[0],
             "email": "tu1@mail.com",
             "phone_number": test_user_phone_numbers[0],
@@ -126,17 +126,17 @@ def test_users_create_user_sc_201(client: TestClient, clean_db_users):
         {
             "role": "user",
             "username": "test_user_2",
-            "first_name": "test_user_2_FIRST_NAME",
-            "last_name": "test_user_2_LAST_NAME",
+            "first_name": "firstnametwo",
+            "last_name": "lasttnametwo",
             "password": test_user_passwords[1],
             "email": "tu2@mail.com",
             "phone_number": test_user_phone_numbers[1],
         },
         {
-            "role": "admin",
+            "role": "user",
             "username": "test_user_3",
-            "first_name": "test_user_3_FIRST_NAME",
-            "last_name": "test_user_3_LAST_NAME",
+            "first_name": "firstnamethree",
+            "last_name": "lasttnamethree",
             "password": test_user_passwords[2],
             "email": "tu3@mail.com",
             "phone_number": test_user_phone_numbers[2],
@@ -164,8 +164,8 @@ def test_users_create_user_sc_409(client: TestClient, clean_db_users):
         {
             "role": "user",
             "username": "test_user_1",
-            "first_name": "test_user_1_FIRST_NAME",
-            "last_name": "test_user_1_LAST_NAME",
+            "first_name": "firstnameone",
+            "last_name": "lastnameone",
             "password": test_user_passwords[0],
             "email": "tu1@mail.com",
             "phone_number": test_user_phone_numbers[0],
@@ -173,8 +173,8 @@ def test_users_create_user_sc_409(client: TestClient, clean_db_users):
         {
             "role": "user",
             "username": "test_user_1",
-            "first_name": "test_user_1_FIRST_NAME",
-            "last_name": "test_user_1_LAST_NAME",
+            "first_name": "firstnametwo",
+            "last_name": "lastnametwo",
             "password": test_user_passwords[0],
             "email": "tu1@mail.com",
             "phone_number": test_user_phone_numbers[0],
@@ -186,6 +186,24 @@ def test_users_create_user_sc_409(client: TestClient, clean_db_users):
 
     response_2 = client.post("/api/users", json=dummy_user[1])
     assert response_2.status_code == status.HTTP_409_CONFLICT
+
+
+def test_users_create_admin_forbidden_sc_422(client: TestClient, clean_db_users):
+    """Ensure creating an admin user is blocked by schema validation."""
+    admin_user = {
+        "role": "admin",
+        "username": "test_admin_1",
+        "first_name": "Firstnameadmin",
+        "last_name": "Lastnameadmin",
+        "password": test_user_passwords[0],
+        "email": "admin1@mail.com",
+        "phone_number": test_user_phone_numbers[0],
+    }
+
+    response = client.post("/api/users", json=admin_user)
+
+    # --- assertions ---
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
 @pytest.mark.parametrize("user_id", [1, 2, 3])
@@ -278,7 +296,7 @@ def test_users_change_password_sc_401_no_auth(
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
-def test_users_change_password_sc_401_wrong_password(
+def test_users_change_password_sc_403_wrong_password(
     client: TestClient, dummy_users: list[Users], clean_db_users
 ):
     from ..main import app
@@ -297,7 +315,7 @@ def test_users_change_password_sc_401_wrong_password(
         "new_password": test_user_passwords_changed[0],
     }
     response = client.put("/api/password", json=user_verification)
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 @pytest.mark.parametrize("user_id", [1, 2, 3])

@@ -26,14 +26,14 @@ async def create_user(
     db_session: Session = Depends(get_db),
 ):
     new_user = Users(
-        email=create_user_request.email,
-        username=create_user_request.username,
+        username=create_user_request.username.strip(),
+        email=create_user_request.email.strip(),
         first_name=create_user_request.first_name.capitalize(),
         last_name=create_user_request.last_name.capitalize(),
-        role=create_user_request.role,
         hashed_password=hash_password(create_user_request.password),
-        is_active=True,
         phone_number=create_user_request.phone_number,
+        role=create_user_request.role,
+        is_active=True,
     )
 
     try:
@@ -53,7 +53,8 @@ async def create_user(
     except IntegrityError:
         db_session.rollback()
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Constraint violation."
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This account likely already exists.",
         )
 
     except SQLAlchemyError:
@@ -115,7 +116,7 @@ async def change_password(
         password_hash=db_user.hashed_password,  # type: ignore
     ):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Error on password change"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Incorrect password."
         )
     else:
         db_user.hashed_password = hash_password(user_verification.new_password)  # type: ignore
