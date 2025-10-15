@@ -58,7 +58,7 @@ async def login_for_access_token(
             value=access_token,
             httponly=True,
             secure=True,
-            samesite="strict",
+            samesite="none",
             path="/",
             max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         )
@@ -67,7 +67,7 @@ async def login_for_access_token(
             value=refresh_token,
             httponly=True,
             secure=True,
-            samesite="strict",
+            samesite="none",
             path="/",
             max_age=REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
         )
@@ -96,7 +96,7 @@ async def refresh_access_token(request: Request, response: Response):
         value=access_token,
         httponly=True,
         secure=True,
-        samesite="strict",
+        samesite="none",
         path="/",
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
