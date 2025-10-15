@@ -52,12 +52,6 @@ def override_get_current_user_test_users():
 # Pytest Fixtures
 @pytest.fixture
 def client():
-    # YOU HAVE TO WRITE THE client() FIXTURE LIKE THIS. HERE'S WHY:
-    #     Since app.dependency_overrides is global to the FastAPI app, any override you set stays active until you remove it.
-    #     By scoping overrides inside the client fixture, each test file (or test) gets its own clean set of overrides,
-    #     and they’re cleared after the fixture ends so tests don’t leak into each other.
-    #     This means that you save yourself from overriding `get_current_user` with `override_get_current_user_test_admin`,
-    #     when you meant to override it with `override_get_current_user_test_user`
     from ..main import app
 
     app.dependency_overrides[get_db] = override_get_db_test_users
@@ -118,7 +112,7 @@ def clean_db_users():
 
 
 # Tests
-def test_users_create_user_sc_200(client: TestClient, clean_db_users):
+def test_users_create_user_sc_201(client: TestClient, clean_db_users):
     dummy_users = [
         {
             "role": "user",

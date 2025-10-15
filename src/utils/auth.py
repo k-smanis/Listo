@@ -32,7 +32,9 @@ class JwtUser(BaseModel):
 
 def get_current_user(token: str = Depends(oauth2_scheme)) -> JwtUser:
     try:
-        payload = jwt.decode(token=token, key=SECRET_KEY, algorithms=[ALGORITHM])  # type: ignore
+        payload = jwt.decode(
+            token=token, key=SECRET_KEY, algorithms=[ALGORITHM]  # type: ignore
+        )
         username = payload.get("sub")  # type: ignore
         user_id = payload.get("id")  # type: ignore
         role = payload.get("role")  # type: ignore
