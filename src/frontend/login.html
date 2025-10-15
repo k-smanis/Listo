@@ -6,123 +6,164 @@
   <title>Listo - Login</title>
   <style>
     * { box-sizing: border-box; }
-    body{
-      font-family:Arial, sans-serif;
-      background:#0b1020;
-      color:#e9ecf8;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      height:100vh;
-      margin:0;
+    body {
+      font-family: Arial, sans-serif;
+      background: #0b1020;
+      color: #e9ecf8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
     }
-    .login-card{
-      background:#121a32;
-      padding:30px;
-      border-radius:16px;
-      box-shadow:0 10px 30px rgba(0,0,0,.35);
-      width:100%;
-      max-width:400px;
+    .login-card {
+      background: #121a32;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+      width: 100%;
+      max-width: 400px;
     }
-    h2{margin:0 0 20px;text-align:center}
-    label{display:block;margin-bottom:6px;font-size:14px;color:#9aa4bf}
-    .input{
-      width:100%;
-      padding:10px;
-      margin-bottom:16px;
-      background:#161e39;
-      border:1px solid #1f2847;
-      border-radius:12px;
-      color:#e9ecf8;
+    h2 { margin: 0 0 20px; text-align: center; }
+    label { display: block; margin-bottom: 6px; font-size: 14px; color: #9aa4bf; }
+    .input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 16px;
+      background: #161e39;
+      border: 1px solid #1f2847;
+      border-radius: 12px;
+      color: #e9ecf8;
     }
-    .btn{
-      width:100%;
-      padding:12px;
-      background:linear-gradient(180deg,#6ea8fe,#4f86f7);
-      border:none;
-      border-radius:12px;
-      color:#061024;
-      font-weight:700;
-      cursor:pointer;
-      transition:opacity .2s;
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(180deg, #6ea8fe, #4f86f7);
+      border: none;
+      border-radius: 12px;
+      color: #061024;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .2s;
     }
-    .btn:hover{opacity:.95}
-    .btn.ghost{
-      background:transparent;
-      border:1px solid #1f2847;
-      color:#e9ecf8;
-      margin-top:10px;
+    .btn:hover { opacity: .95; }
+    .btn.ghost {
+      background: transparent;
+      border: 1px solid #1f2847;
+      color: #e9ecf8;
+      margin-top: 10px;
     }
-    .btn.ghost:hover{
-      background:#161e39;
+    .btn.ghost:hover {
+      background: #161e39;
     }
-    .msg{text-align:center;font-size:14px;margin-top:10px;color:#9aa4bf}
+    .msg { text-align: center; font-size: 14px; margin-top: 10px; color: #9aa4bf; }
   </style>
 </head>
 <body>
   <div class="login-card">
     <h2>Sign In</h2>
-    <label for="username">Username</label>
-    <input type="text" id="username" class="input" placeholder="Enter username" />
-    <label for="password">Password</label>
-    <input type="password" id="password" class="input" placeholder="Enter password" />
-    <button class="btn" onclick="login()">Login</button>
-    <button class="btn ghost" onclick="goToSignup()">Sign Up</button>
+
+    <!-- ✅ Wrap inputs in a proper form -->
+    <form onsubmit="login(event)">
+      <label for="username">Username</label>
+      <input type="text" id="username" class="input" placeholder="Enter username" />
+      <label for="password">Password</label>
+      <input type="password" id="password" class="input" placeholder="Enter password" />
+      <button type="submit" class="btn">Login</button>
+      <button type="button" class="btn ghost" onclick="goToSignup()">Sign Up</button>
+    </form>
+
     <div class="msg" id="loginMsg"></div>
   </div>
 
   <script>
-    const baseURL = "";
-    const api = (p) => baseURL + p;
+    const api = (p) => p;
 
-    async function login(){
-      const u = document.getElementById('username').value.trim();
-      const p = document.getElementById('password').value;
-      const msg = document.getElementById('loginMsg');
-      if(!u || !p){ msg.textContent = 'Please enter username and password'; return; }
-      msg.textContent = 'Logging in…';
-      try{
+    async function login(e) {
+      e.preventDefault(); // ✅ Stop browser from submitting the form
+      const u = document.getElementById("username").value.trim();
+      const p = document.getElementById("password").value;
+      const msg = document.getElementById("loginMsg");
+
+      msg.textContent = "";
+      msg.style.color = "#9aa4bf";
+
+      if (!u || !p) {
+        msg.style.color = "#ff5c5c";
+        msg.textContent = "Please enter username and password.";
+        return;
+      }
+
+      msg.textContent = "Logging in…";
+
+      try {
         const form = new URLSearchParams();
-        form.set('username', u);
-        form.set('password', p);
+        form.set("username", u);
+        form.set("password", p);
 
-        const res = await fetch(api('/api/token'), {
-          method: 'POST',
-          headers: {
-            'Accept': 'application/json, text/plain, */*',
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          body: form
+        const res = await fetch(api("/api/token"), {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: form,
+          credentials: "include", // 👈 include cookies
         });
 
-        const ct = res.headers.get('content-type') || '';
-        let data;
-        if(ct.includes('application/json')){
-          try { data = await res.json(); } catch { data = {}; }
-        } else {
-          data = await res.text();
+        const ct = res.headers.get("content-type") || "";
+        let data = {};
+        if (ct.includes("application/json")) {
+          try { data = await res.json(); } catch {}
         }
 
-        if(!res.ok){
-          const detail = (data && data.detail) || (typeof data === 'string' ? data : 'Login failed');
-          throw new Error(detail);
+        if (res.status === 401) {
+          msg.style.color = "#ff5c5c";
+          msg.textContent = data.detail || "Invalid username or password.";
+          return;
         }
 
-        const token = (data && (data.access_token || data.token || data.jwt)) || (typeof data === 'string' ? data : '');
-        if(!token) throw new Error('No token returned from server');
+        if (!res.ok) {
+          msg.style.color = "#ff5c5c";
+          msg.textContent = data.detail || "Login failed.";
+          return;
+        }
 
-        localStorage.setItem('listo_token', token);
-        localStorage.setItem('listo_user', u);
-        window.location.assign('/ui/tasks');
-      }catch(e){
+        // ✅ Cookie automatically set — no token in body required
+        msg.style.color = "#6ea8fe";
+        msg.textContent = data.message || "Login successful!";
+        setTimeout(() => window.location.assign("/ui/tasks"), 800);
+
+      } catch (e) {
         console.error(e);
-        msg.textContent = (e && e.message) ? e.message : 'Network/CORS error';
+        msg.style.color = "#ff5c5c";
+        msg.textContent = "Network or server error.";
       }
     }
 
-    function goToSignup(){
-      window.location.assign('/ui/signup');
+    function goToSignup() {
+      window.location.assign("/ui/signup");
     }
+
+    async function refreshToken() {
+      try {
+        const res = await fetch('/api/refresh', {
+          method: 'POST',
+          credentials: 'include',
+        });
+
+        if (res.ok) {
+          console.log('✅ Access token refreshed');
+        } else {
+          console.warn('⚠️ Failed to refresh token:', res.status);
+          if (res.status === 401) {
+            // refresh token expired — log out gracefully
+            window.location.assign('/ui/login');
+          }
+        }
+      } catch (err) {
+        console.error('❌ Token refresh error:', err);
+      }
+    }
+
+    setInterval(refreshToken, 20 * 60 * 1000);
   </script>
 </body>
 </html>

@@ -12,65 +12,112 @@
     }
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
-    .container{max-width:800px;margin:0 auto;padding:20px}
+    .container{max-width:900px;margin:0 auto;padding:20px}
 
-    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
     .brand{font-weight:900;font-size:22px}
     .sub{color:var(--muted);font-size:12px;margin-top:2px}
     .h-right{display:flex;gap:10px}
     .btn{
-      appearance:none;border:1px solid var(--border);
+      appearance:none;
+      border:1px solid var(--border);
       background:linear-gradient(180deg,var(--primary),var(--primary-2));
-      color:#061024;padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer;
-      transition:opacity 0.2s ease;
+      color:#061024;
+      padding:8px 12px;
+      border-radius:10px;
+      font-weight:700;
+      cursor:pointer;
+      transition:all 0.2s ease;
+      min-width:120px;
+      text-align:center;
     }
     .btn:hover{opacity:.9}
     .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
     .btn.danger{background:linear-gradient(180deg,var(--danger),var(--danger-2));color:white;border:none}
 
-    .section {
+    /* --- Card Sections --- */
+    .table-wrap {
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+    }
+    h3 {
+      background: #0f1429;
+      margin: 0;
+      padding: 12px 16px;
+      font-size: 16px;
+      font-weight: 800;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-content {
       padding: 20px;
-      margin-bottom: 20px;
     }
 
-    .section h2 {
-      margin-bottom: 16px;
-      font-size: 18px;
-    }
-
+    /* --- Account Info Grid --- */
     .info-grid {
       display: grid;
-      grid-template-columns: 150px 1fr;
+      grid-template-columns: 160px 1fr;
       row-gap: 12px;
       column-gap: 10px;
-    }
-
-    .info-label {
-      color: var(--muted);
       font-size: 14px;
     }
+    .info-label { color: var(--muted); }
+    .info-value { font-weight: 600; word-break: break-word; }
 
-    .info-value {
-      font-weight: 600;
-      word-break: break-word;
+    /* --- Form Inputs --- */
+    label {
+      display:block;
+      font-size:13px;
+      color:var(--muted);
+      margin-bottom:6px;
     }
-
     input {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 12px;
-      background: var(--input);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
+      width:100%;
+      padding:10px;
+      background:var(--input);
+      border:1px solid var(--border);
+      border-radius:10px;
+      color:var(--text);
+      margin-bottom:16px;
+      transition:border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    input:focus {
+      outline:none;
+      border-color:var(--primary);
+      box-shadow:0 0 4px var(--primary);
     }
 
-    .form-btn {
-      display: inline-block;
-      margin-top: 4px;
+    /* --- Form Buttons --- */
+    .form-actions {
+      display:flex;
+      justify-content:flex-end;
+      margin-top:8px;
+    }
+
+    /* --- Toast --- */
+    .toast-popup {
+      position: absolute;
+      background: #1a213b;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.45);
+      z-index: 15;
+      opacity: 0;
+      transform: translateY(-4px);
+      animation: fadeInOut 2.4s ease forwards;
+    }
+    .toast-success { border: 1px solid var(--primary-2); color: var(--primary); }
+    .toast-error { border: 1px solid var(--danger-2); color: var(--danger); }
+
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translateY(-4px); }
+      10%, 85% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-4px); }
     }
   </style>
 </head>
@@ -88,9 +135,9 @@
     </header>
 
     <!-- Account Info -->
-    <div class="section">
-      <h2>Account Info</h2>
-      <div class="info-grid">
+    <div class="table-wrap">
+      <h3>Account Info</h3>
+      <div class="section-content info-grid">
         <div class="info-label">Username</div><div class="info-value" id="username">—</div>
         <div class="info-label">Email</div><div class="info-value" id="email">—</div>
         <div class="info-label">First Name</div><div class="info-value" id="first_name">—</div>
@@ -101,40 +148,45 @@
     </div>
 
     <!-- Change Password -->
-    <div class="section">
-      <h2>Change Password</h2>
-      <label>Current Password</label>
-      <input id="currentPassword" type="password" placeholder="Current password">
-      <label>New Password</label>
-      <input id="newPassword" type="password" placeholder="New password">
-      <button class="btn form-btn" onclick="changePassword()">Change Password</button>
+    <div class="table-wrap">
+      <h3>Change Password</h3>
+      <div class="section-content">
+        <label>Current Password</label>
+        <input id="currentPassword" type="password" placeholder="Current password">
+        <label>New Password</label>
+        <input id="newPassword" type="password" placeholder="New password">
+        <div class="form-actions">
+          <button class="btn" onclick="changePassword()">Change Password</button>
+        </div>
+      </div>
     </div>
 
     <!-- Change Phone -->
-    <div class="section">
-      <h2>Change Phone Number</h2>
-      <label>Password</label>
-      <input id="phonePassword" type="password" placeholder="Current password">
-      <label>New Phone Number</label>
-      <input id="newPhone" type="text" placeholder="(xxx) xxx-xxxx">
-      <button class="btn form-btn" onclick="changePhone()">Change Phone</button>
+    <div class="table-wrap">
+      <h3>Change Phone Number</h3>
+      <div class="section-content">
+        <label>Password</label>
+        <input id="phonePassword" type="password" placeholder="Current password">
+        <label>New Phone Number</label>
+        <input id="newPhone" type="text" placeholder="1234567890">
+        <div class="form-actions">
+          <button class="btn" onclick="changePhone()">Change Phone</button>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
     const api = (p) => p;
-    const token = localStorage.getItem('listo_token');
-    const username = localStorage.getItem('listo_user') || '';
-    const headersAuth = token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : {};
+    document.getElementById('whoami').textContent = 'Loading...';
 
-    if (!token) location.assign('/login');
-    document.getElementById('whoami').textContent = username || 'unknown';
-
+    // --- Load account info ---
     async function loadAccount() {
       try {
-        const res = await fetch(api('/api/users'), { headers: headersAuth });
-        if (!res.ok) throw new Error('Failed to load account info');
+        const res = await fetch(api('/api/users'), { credentials: 'include' });
+        if (res.status === 401) return location.assign('/ui/login');
         const data = await res.json();
+        document.getElementById('whoami').textContent = data.username;
         document.getElementById('username').textContent = data.username;
         document.getElementById('email').textContent = data.email;
         document.getElementById('first_name').textContent = data.first_name;
@@ -143,70 +195,154 @@
         document.getElementById('role').textContent = data.role;
       } catch (e) {
         console.error(e);
-        alert('Could not load account info.');
+        showToast('Could not load account info.', null, 'error');
+        location.assign('/ui/login');
       }
     }
 
+    // --- Helper for backend error messages ---
+    async function parseError(res) {
+      try {
+        const err = await res.json();
+        if (Array.isArray(err.detail)) {
+          return err.detail[0]?.msg || 'Invalid input.';
+        } else if (typeof err.detail === 'string') {
+          return err.detail;
+        } else {
+          return 'An error occurred.';
+        }
+      } catch {
+        return 'An error occurred.';
+      }
+    }
+
+    // --- Change Password ---
     async function changePassword() {
       const password = document.getElementById('currentPassword').value.trim();
       const new_password = document.getElementById('newPassword').value.trim();
-      if (!password || !new_password) return alert('Both fields are required.');
+      const btn = document.querySelector('.table-wrap:nth-of-type(2) .btn');
+      if (!password || !new_password)
+        return showToast('Both fields are required.', btn, 'error');
 
       try {
         const res = await fetch(api('/api/password'), {
           method: 'PUT',
-          headers: headersAuth,
-          body: JSON.stringify({ password, new_password })
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password, new_password }),
         });
+
         if (res.status === 204) {
-          alert('Password changed successfully!');
+          showToast('Password changed successfully!', btn, 'success');
           document.getElementById('currentPassword').value = '';
           document.getElementById('newPassword').value = '';
+        } else if (res.status === 403) {
+          const msg = await parseError(res);
+          showToast(msg || 'Incorrect password.', btn, 'error');
+        } else if (res.status === 401) {
+          showToast('Session expired. Please log in again.', btn, 'error');
+          location.assign('/ui/login');
         } else {
-          const err = await res.json();
-          alert(err.detail || 'Failed to change password.');
+          const msg = await parseError(res);
+          showToast(msg || 'Failed to change password.', btn, 'error');
         }
       } catch (e) {
         console.error(e);
-        alert('An error occurred.');
+        showToast('An error occurred.', btn, 'error');
       }
     }
 
+    // --- Change Phone ---
     async function changePhone() {
       const password = document.getElementById('phonePassword').value.trim();
       const new_phone_number = document.getElementById('newPhone').value.trim();
-      if (!password || !new_phone_number) return alert('Both fields are required.');
+      const btn = document.querySelector('.table-wrap:nth-of-type(3) .btn');
+      if (!password || !new_phone_number)
+        return showToast('Both fields are required.', btn, 'error');
 
       try {
         const res = await fetch(api('/api/phone-number'), {
           method: 'PUT',
-          headers: headersAuth,
-          body: JSON.stringify({ password, new_phone_number })
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password, new_phone_number }),
         });
+
         if (res.status === 204) {
-          alert('Phone number changed successfully!');
+          showToast('Phone number changed successfully!', btn, 'success');
           document.getElementById('phonePassword').value = '';
           document.getElementById('newPhone').value = '';
           loadAccount();
+        } else if (res.status === 403) {
+          const msg = await parseError(res);
+          showToast(msg || 'Incorrect password.', btn, 'error');
+        } else if (res.status === 401) {
+          showToast('Session expired. Please log in again.', btn, 'error');
+          location.assign('/ui/login');
         } else {
-          const err = await res.json();
-          alert(err.detail || 'Failed to change phone number.');
+          const msg = await parseError(res);
+          showToast(msg || 'Failed to change phone number.', btn, 'error');
         }
       } catch (e) {
         console.error(e);
-        alert('An error occurred.');
+        showToast('An error occurred.', btn, 'error');
       }
     }
 
+    // --- Navigation ---
     function goToTasks() { location.assign('/ui/tasks'); }
-
     function logout() {
-      localStorage.removeItem('listo_token');
-      localStorage.removeItem('listo_user');
-      location.assign('/ui/login');
+      fetch(api('/api/logout'), { method: 'POST', credentials: 'include' })
+        .finally(() => location.assign('/ui/login'));
     }
+
+    // --- Toast Feedback ---
+    function showToast(message, nearButton, type = 'success') {
+      document.querySelectorAll('.toast-popup').forEach(e => e.remove());
+      const popup = document.createElement('div');
+      popup.className = `toast-popup toast-${type}`;
+      popup.textContent = message;
+
+      let top = 100, left = window.innerWidth / 2 - 100;
+      if (nearButton) {
+        const rect = nearButton.getBoundingClientRect();
+        top = rect.top + window.scrollY - 40;
+        left = Math.min(rect.left + rect.width + 10, window.innerWidth - 200);
+      }
+
+      popup.style.top = `${top}px`;
+      popup.style.left = `${left}px`;
+      popup.style.position = 'absolute';
+
+      document.body.appendChild(popup);
+      setTimeout(() => popup.remove(), 2400);
+    }
+
+    async function refreshToken() {
+      try {
+        const res = await fetch('/api/refresh', {
+          method: 'POST',
+          credentials: 'include',
+        });
+
+        if (res.ok) {
+          console.log('✅ Access token refreshed');
+        } else {
+          console.warn('⚠️ Failed to refresh token:', res.status);
+          if (res.status === 401) {
+            // refresh token expired — log out gracefully
+            window.location.assign('/ui/login');
+          }
+        }
+      } catch (err) {
+        console.error('❌ Token refresh error:', err);
+      }
+    }
+
+    setInterval(refreshToken, 20 * 60 * 1000);
 
     loadAccount();
   </script>
+
 </body>
 </html>

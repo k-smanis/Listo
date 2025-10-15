@@ -1,16 +1,16 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException, Request
 from datetime import timedelta, datetime, timezone
 from pydantic import BaseModel
 from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from ..utils.security import verify_password
-from ..models import Users
 from starlette import status
-from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
 from pathlib import Path
 import os
+from ..database import get_db
+from ..utils.security import verify_password
+from ..models import Users
 
 # Initialize Auth Configuration
 BASE_DIR = Path(__file__).resolve().parent
@@ -18,10 +18,8 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.getenv("SECRET_KEY")
 assert SECRET_KEY is not None, "SECRET_KEY must be set in .env"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
-
-# Initialize Dependencies
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
 
 class JwtUser(BaseModel):
@@ -30,24 +28,39 @@ class JwtUser(BaseModel):
     role: str
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)) -> JwtUser:
-    try:
-        payload = jwt.decode(
-            token=token, key=SECRET_KEY, algorithms=[ALGORITHM]  # type: ignore
+def get_current_user(request: Request, db_session=Depends(get_db)) -> JwtUser:
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated. Missing token.",
         )
-        username = payload.get("sub")  # type: ignore
-        user_id = payload.get("id")  # type: ignore
-        role = payload.get("role")  # type: ignore
+
+    try:
+        payload = jwt.decode(token, key=SECRET_KEY, algorithms=[ALGORITHM])  # type: ignore
+        username = payload.get("sub")
+        user_id = payload.get("id")
+        role = payload.get("role")
+
         if username is None or user_id is None:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload.",
             )
-        else:
-            return JwtUser(username=str(username), user_id=int(user_id), role=str(role))
+
+        # Optional: check user still exists
+        user = db_session.query(Users).filter(Users.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found."
+            )
+
+        return JwtUser(username=str(username), user_id=int(user_id), role=str(role))
+
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
+            detail="Invalid or expired token.",
         )
 
 
@@ -80,3 +93,27 @@ def create_access_token(username: str, user_id: int, role: str) -> str:
         "exp": exp,  # expiration time claim
     }
     return jwt.encode(claims=payload, key=SECRET_KEY, algorithm=ALGORITHM)  # type: ignore
+
+
+def create_refresh_token(
+    username: str, user_id: int, role: str, expires_delta: timedelta
+):
+    expire = datetime.now(timezone.utc) + expires_delta
+    to_encode = {
+        "username": username,
+        "user_id": user_id,
+        "role": role,
+        "exp": expire,
+        "type": "refresh",
+    }
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)  # type: ignore
+
+
+def verify_refresh_token(token: str):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])  # type: ignore
+        if payload.get("type") != "refresh":
+            return None
+        return payload
+    except JWTError:
+        return None
